@@ -1,16 +1,37 @@
 package ca.brocku.cosc3p97.cs97aa.trylocationapi;
 
 import android.app.Activity;
+import android.location.Location;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
+import android.widget.Toast;
 
-public class MainActivity extends Activity {
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
+import com.google.android.gms.location.LocationServices;
+
+public class MainActivity extends Activity implements ConnectionCallbacks, OnConnectionFailedListener {
+
+    GoogleApiClient mGoogleApiClient;
+    Location mLastLocation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        buildGoogleApiClient();
+    }
+
+    protected synchronized void buildGoogleApiClient() {
+        GoogleApiClient.Builder builder = new GoogleApiClient.Builder(this);
+        builder.addConnectionCallbacks(this);
+        builder.addOnConnectionFailedListener(this);
+        builder.addApi(LocationServices.API);
+        mGoogleApiClient = builder.build();
     }
 
     @Override
@@ -33,5 +54,36 @@ public class MainActivity extends Activity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void makeToast(String text) {
+        Toast toast = Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT);
+        toast.show();
+    }
+
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        TextView text = (TextView) findViewById(R.id.mainText);
+        text.setText("onConnected called");
+        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        if(mLastLocation != null) {
+            String lattitude  = String.valueOf(mLastLocation.getLatitude());
+            String longitude = String.valueOf(mLastLocation.getLongitude());
+            makeToast("longitude:" + longitude + ", lattitude:" + lattitude);
+        } else {
+            makeToast("Connected with no location to show");
+        }
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+        makeToast("Connection suspended");
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        makeToast("Connection failed");
     }
 }
