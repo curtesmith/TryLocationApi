@@ -1,37 +1,30 @@
 package ca.brocku.cosc3p97.cs97aa.trylocationapi;
 
 import android.app.Activity;
+import android.content.Context;
 import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
-import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
-import com.google.android.gms.location.LocationServices;
 
-public class MainActivity extends Activity implements ConnectionCallbacks, OnConnectionFailedListener {
-
-    GoogleApiClient mGoogleApiClient;
-    Location mLastLocation;
+public class MainActivity extends Activity implements LocationListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        buildGoogleApiClient();
+        setupLocationManager();
     }
 
-    protected synchronized void buildGoogleApiClient() {
-        GoogleApiClient.Builder builder = new GoogleApiClient.Builder(this);
-        builder.addConnectionCallbacks(this);
-        builder.addOnConnectionFailedListener(this);
-        builder.addApi(LocationServices.API);
-        mGoogleApiClient = builder.build();
+
+    protected void setupLocationManager() {
+        LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 0, 0, this);
+
     }
 
     @Override
@@ -56,34 +49,29 @@ public class MainActivity extends Activity implements ConnectionCallbacks, OnCon
         return super.onOptionsItemSelected(item);
     }
 
-    private void makeToast(String text) {
-        Toast toast = Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT);
-        toast.show();
-    }
-
-
-    @Override
-    public void onConnected(Bundle bundle) {
-        TextView text = (TextView) findViewById(R.id.mainText);
-        text.setText("onConnected called");
-        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        if(mLastLocation != null) {
-            String lattitude  = String.valueOf(mLastLocation.getLatitude());
-            String longitude = String.valueOf(mLastLocation.getLongitude());
-            makeToast("longitude:" + longitude + ", lattitude:" + lattitude);
-        } else {
-            makeToast("Connected with no location to show");
-        }
-
+    private void setTextView(int id, String text) {
+        TextView textView = (TextView) findViewById(id);
+        textView.setText(text);
     }
 
     @Override
-    public void onConnectionSuspended(int i) {
-        makeToast("Connection suspended");
+    public void onLocationChanged(Location location) {
+        setTextView(R.id.latitude, "latitude: " + Double.toString(location.getLatitude()));
+        setTextView(R.id.longitude, "longitude: " + Double.toString(location.getLongitude()));
     }
 
     @Override
-    public void onConnectionFailed(ConnectionResult connectionResult) {
-        makeToast("Connection failed");
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        setTextView(R.id.status, "Provider:" + provider + ", status=" + Integer.toString(status));
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+        setTextView(R.id.providerEnabled, "Provider:" + provider + " is enabled");
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+        setTextView(R.id.providerEnabled, "Provider:" + provider + " is disabled");
     }
 }
